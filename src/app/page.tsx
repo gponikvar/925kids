@@ -141,6 +141,8 @@ const PRESET_LOCATIONS: PresetLocation[] = [
   { label: "Discovery Bay Town Center", city: "Discovery Bay", lat: 37.9085, lng: -121.6020 },
 ];
 
+const SCHOOLS = PRESET_LOCATIONS.filter(p => /Elementary|Middle|Intermediate|High School/.test(p.label)).map(p => ({ label: p.label, city: p.city }));
+
 const QUIZ_STEPS = [
   { id: "interest", question: "What is your kid into?", subtitle: "Pick as many as you\u2019d like", type: "multi", options: CATEGORIES.slice(1).map(c => ({ value: c, label: `${CATEGORY_ICONS[c]} ${c}` })) },
   { id: "age", question: "How old is your kid?", type: "single", options: AGE_RANGES.slice(1) },
@@ -149,6 +151,13 @@ const QUIZ_STEPS = [
 ];
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
+
+function hexToRgb(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+}
 
 function calculateAge(birthdate: string): number {
   const birth = new Date(birthdate);
@@ -214,8 +223,9 @@ const styles = `
   .app { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
   .site-header { background: var(--warm-white); border-bottom: 1px solid var(--border); padding: 0 24px; position: sticky; top: 0; z-index: 100; }
   .header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
-  .logo { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; color: var(--ink); letter-spacing: -0.5px; cursor: pointer; }
-  .logo-accent { color: var(--sage); }
+  .logo { cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .logo-icon { vertical-align: middle; }
+  .logo-text { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; color: var(--ink); vertical-align: middle; }
   .nav-pill { background: var(--sage); color: white; border: none; border-radius: 100px; padding: 8px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
   .hero { background: var(--warm-white); padding: 0; text-align: center; border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
   .hero-img-wrap { position: relative; width: 100%; height: 360px; overflow: hidden; }
@@ -359,17 +369,21 @@ const styles = `
   .dashboard-card-avatar { font-size: 56px; line-height: 1; }
   .dashboard-card-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--ink); }
   .dashboard-card-age { font-size: 13px; color: var(--ink-muted); }
+  .dashboard-card-school { font-size: 12px; color: var(--ink-muted); }
   .dashboard-card-about { font-size: 13px; color: var(--ink-light); line-height: 1.5; }
   .dashboard-card-stats { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
   .dashboard-stat { font-size: 12px; color: var(--ink-light); font-weight: 500; }
   .dashboard-add-card { border-style: dashed; border-color: var(--ink-muted); }
   .dashboard-add-card:hover { border-color: var(--sage); border-style: solid; }
   .dashboard-add-icon { font-size: 36px; color: var(--ink-muted); line-height: 1; margin-bottom: 4px; }
-  .kid-hero { background: linear-gradient(135deg, var(--sage-light) 0%, var(--cream) 50%, var(--amber-light) 100%); padding: 48px 24px; text-align: center; border-bottom: 1px solid var(--border); }
+  .kid-hero { padding: 48px 24px; text-align: center; border-bottom: 1px solid var(--border); }
   .kid-hero-inner { max-width: 600px; margin: 0 auto; }
   .kid-hero-avatar { display: inline-flex; align-items: center; justify-content: center; width: 100px; height: 100px; background: white; border-radius: 20px; font-size: 56px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); margin-bottom: 16px; }
   .kid-hero-title { font-family: 'Fraunces', serif; font-size: clamp(24px, 4vw, 36px); font-weight: 700; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 8px; }
   .kid-hero-detail { color: var(--ink-light); font-size: 15px; margin-bottom: 20px; line-height: 1.5; }
+  .kid-hero-about { color: var(--ink-light); font-size: 14px; margin-bottom: 12px; line-height: 1.5; font-style: italic; }
+  .kid-hero-interests { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .kid-interest-chip { background: rgba(255,255,255,0.7); border: 1px solid var(--border); border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 500; color: var(--ink-light); }
   .kid-hero-actions { display: flex; gap: 10px; justify-content: center; }
   .calendar-section { background: var(--warm-white); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; margin-bottom: 16px; }
   .calendar-header { display: flex; align-items: center; justify-content: space-between; }
@@ -428,7 +442,7 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
 
   // Kid profiles (persisted)
-  interface KidProfile { id: string; name: string; avatar: string; birthdate: string; about: string; accentColor: string; createdAt: number }
+  interface KidProfile { id: string; name: string; avatar: string; birthdate: string; about: string; accentColor: string; school: string; createdAt: number }
   const [profiles, setProfiles] = useState<KidProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
 
@@ -446,6 +460,8 @@ export default function Home() {
   const [profileFormBirthdate, setProfileFormBirthdate] = useState("");
   const [profileFormAbout, setProfileFormAbout] = useState("");
   const [profileFormColor, setProfileFormColor] = useState("#4A7C59");
+  const [profileFormSchool, setProfileFormSchool] = useState("");
+  const [profileFormSchoolCustom, setProfileFormSchoolCustom] = useState(false);
   const [multiAddOpen, setMultiAddOpen] = useState<number | null>(null);
 
   // UI-only state
@@ -589,6 +605,9 @@ export default function Home() {
     setProfileFormBirthdate("");
     setProfileFormAbout("");
     setProfileFormColor("#4A7C59");
+    setProfileFormSchool("");
+    setProfileFormSchoolCustom(false);
+    setQuizAnswers({});
   }, []);
 
   const startEditProfile = useCallback((profile: KidProfile) => {
@@ -598,25 +617,36 @@ export default function Home() {
     setProfileFormBirthdate(profile.birthdate);
     setProfileFormAbout(profile.about || "");
     setProfileFormColor(profile.accentColor || "#4A7C59");
+    setProfileFormSchool(profile.school || "");
+    setProfileFormSchoolCustom(profile.school ? !SCHOOLS.some(s => s.label === profile.school) : false);
   }, []);
 
   const handleSaveProfile = useCallback(() => {
     if (!profileFormName.trim() || !profileFormBirthdate) return;
     if (editingProfileId && editingProfileId !== "__new__") {
       setProfiles(prev => prev.map(p =>
-        p.id === editingProfileId ? { ...p, name: profileFormName.trim(), avatar: profileFormAvatar, birthdate: profileFormBirthdate, about: profileFormAbout, accentColor: profileFormColor } : p
+        p.id === editingProfileId ? { ...p, name: profileFormName.trim(), avatar: profileFormAvatar, birthdate: profileFormBirthdate, about: profileFormAbout, accentColor: profileFormColor, school: profileFormSchool } : p
       ));
     } else {
-      const newProfile: KidProfile = { id: generateId(), name: profileFormName.trim(), avatar: profileFormAvatar, birthdate: profileFormBirthdate, about: profileFormAbout, accentColor: profileFormColor, createdAt: Date.now() };
+      const newProfile: KidProfile = { id: generateId(), name: profileFormName.trim(), avatar: profileFormAvatar, birthdate: profileFormBirthdate, about: profileFormAbout, accentColor: profileFormColor, school: profileFormSchool, createdAt: Date.now() };
       setProfiles(prev => [...prev, newProfile]);
       setActiveProfileId(newProfile.id);
       setView("kid");
       const age = calculateAge(newProfile.birthdate);
       setFilterAge(ageToFilterValue(age));
+      // Apply onboarding quiz answers as filters
+      const interest = quizAnswers.interest as string[] | undefined;
+      const when = quizAnswers.when as string[] | undefined;
+      if (interest?.length) setFilterCategory(interest[0]);
+      if (when?.length) setFilterSessions(when);
+      if (quizAnswers.area && quizAnswers.area !== "All Areas") {
+        const group = CITY_GROUPS.find(g => g.label === quizAnswers.area);
+        if (group) { setFilterCity(group.cities[0]); } else { setFilterCity(quizAnswers.area as string); }
+      }
     }
     setEditingProfileId(null);
-    setProfileFormName(""); setProfileFormAvatar("\uD83E\uDD95"); setProfileFormBirthdate(""); setProfileFormAbout(""); setProfileFormColor("#4A7C59");
-  }, [editingProfileId, profileFormName, profileFormAvatar, profileFormBirthdate, profileFormAbout, profileFormColor]);
+    setProfileFormName(""); setProfileFormAvatar("\uD83E\uDD95"); setProfileFormBirthdate(""); setProfileFormAbout(""); setProfileFormColor("#4A7C59"); setProfileFormSchool(""); setProfileFormSchoolCustom(false); setQuizAnswers({});
+  }, [editingProfileId, profileFormName, profileFormAvatar, profileFormBirthdate, profileFormAbout, profileFormColor, profileFormSchool, quizAnswers]);
 
   const handleDeleteProfile = useCallback((profileId: string) => {
     if (!confirm("Delete this kid profile? Their ratings and notes will be kept.")) return;
@@ -688,6 +718,17 @@ export default function Home() {
     if (!userLocation) return null;
     return haversineDistance(userLocation.lat, userLocation.lng, l.lat, l.lng);
   };
+
+  // Kid interests (derived from rated programs)
+  const kidInterests = useMemo(() => {
+    if (!activeProfileId) return [];
+    const cats = new Set<string>();
+    LISTINGS.forEach(l => {
+      const r = ratings[`${activeProfileId}:${l.id}`];
+      if (r === "love" || r === "like") cats.add(l.category);
+    });
+    return Array.from(cats);
+  }, [activeProfileId, ratings]);
 
   // Calendar computed values
   const calendarPrograms = useMemo(() => {
@@ -975,7 +1016,13 @@ export default function Home() {
         {/* ── Header ── */}
         <header className="site-header" style={view === "kid" && activeProfile?.accentColor ? { borderTop: `3px solid ${activeProfile.accentColor}` } : undefined}>
           <div className="header-inner">
-            <span className="logo" onClick={() => { setView("search"); setActiveProfileId(null); resetFilters(); }}>925<span className="logo-accent">Kids</span></span>
+            <span className="logo" onClick={() => { setView("search"); setActiveProfileId(null); resetFilters(); }}>
+              <svg className="logo-icon" width="38" height="24" viewBox="0 0 38 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="38" height="24" rx="8" fill="var(--sage)" />
+                <text x="19" y="16.5" textAnchor="middle" fill="white" fontFamily="'DM Sans', sans-serif" fontSize="13" fontWeight="700">925</text>
+              </svg>
+              <span className="logo-text">Kids</span>
+            </span>
             <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <button className={`header-nav-btn ${view === "search" ? "active" : ""}`} onClick={() => { setView("search"); setActiveProfileId(null); resetFilters(); }}>Browse Programs</button>
               {profiles.length > 0 && (
@@ -984,12 +1031,6 @@ export default function Home() {
               {view === "kid" && activeProfile && (
                 <span className="header-breadcrumb">{activeProfile.avatar || "\uD83E\uDD95"} {activeProfile.name}</span>
               )}
-              <button className="btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => {
-                setShowQuiz(true); setQuizStep(0);
-                if (activeProfile) {
-                  setQuizAnswers({ age: ageToFilterValue(calculateAge(activeProfile.birthdate)) });
-                } else { setQuizAnswers({}); }
-              }}>Find by Quiz {"\u2728"}</button>
               <button className="nav-pill">+ List</button>
             </div>
           </div>
@@ -1071,9 +1112,60 @@ export default function Home() {
                     <input type="date" className="address-input" value={profileFormBirthdate} onChange={e => setProfileFormBirthdate(e.target.value)} max={new Date().toISOString().split("T")[0]} />
                   </div>
                   <div className="filter-group" style={{ marginBottom: 16 }}>
+                    <label className="filter-label">School</label>
+                    {profileFormSchoolCustom ? (
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <input className="address-input" placeholder="School name..." value={profileFormSchool} onChange={e => setProfileFormSchool(e.target.value)} />
+                        <button className="address-clear" onClick={() => { setProfileFormSchoolCustom(false); setProfileFormSchool(""); }}>Back</button>
+                      </div>
+                    ) : (
+                      <select className="filter-select" value={profileFormSchool} onChange={e => { if (e.target.value === "__other__") { setProfileFormSchoolCustom(true); setProfileFormSchool(""); } else { setProfileFormSchool(e.target.value); } }}>
+                        <option value="">Select a school...</option>
+                        {CITY_GROUPS.map(g => {
+                          const groupSchools = SCHOOLS.filter(s => g.cities.includes(s.city));
+                          if (groupSchools.length === 0) return null;
+                          return <optgroup key={g.label} label={g.label}>{groupSchools.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}</optgroup>;
+                        })}
+                        <option value="__other__">Other</option>
+                      </select>
+                    )}
+                  </div>
+                  <div className="filter-group" style={{ marginBottom: 16 }}>
                     <label className="filter-label">About {"\u2014"} what are they into?</label>
                     <textarea className="note-area" style={{ minHeight: 80 }} placeholder={"e.g. Loves dinosaurs, building with Legos, and running around outside. Shy at first but warms up fast. Looking for something creative after school\u2026"} value={profileFormAbout} onChange={e => setProfileFormAbout(e.target.value)} />
                   </div>
+                  {editingProfileId === "__new__" && (
+                    <>
+                      <div style={{ borderTop: "1px solid var(--border)", margin: "20px 0 16px", paddingTop: 16 }}>
+                        <p className="quiz-subtitle" style={{ marginBottom: 0, fontSize: 13, color: "var(--ink)", fontWeight: 600 }}>Help us find programs {"\u2728"}</p>
+                        <p className="quiz-subtitle" style={{ marginBottom: 16 }}>Optional — you can always change filters later</p>
+                      </div>
+                      <div className="filter-group" style={{ marginBottom: 16 }}>
+                        <label className="filter-label">What are they into?</label>
+                        <div className="quiz-options" style={{ marginTop: 4 }}>
+                          {CATEGORIES.slice(1).map(c => (
+                            <button key={c} className={`quiz-option ${((quizAnswers.interest as string[]) || []).includes(c) ? "selected" : ""}`} onClick={() => handleQuizOption("interest", c, "multi")} type="button">{CATEGORY_ICONS[c]} {c}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="filter-group" style={{ marginBottom: 16 }}>
+                        <label className="filter-label">When are you looking?</label>
+                        <div className="quiz-options" style={{ marginTop: 4 }}>
+                          {SESSION_TYPES.map(s => (
+                            <button key={s.value} className={`quiz-option ${((quizAnswers.when as string[]) || []).includes(s.value) ? "selected" : ""}`} onClick={() => handleQuizOption("when", s.value, "multi")} type="button">{s.label}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="filter-group" style={{ marginBottom: 16 }}>
+                        <label className="filter-label">Which area?</label>
+                        <div className="quiz-options" style={{ marginTop: 4 }}>
+                          {[{ value: "All Areas", label: "Anywhere" }, ...CITY_GROUPS.map(g => ({ value: g.label, label: g.label }))].map(opt => (
+                            <button key={opt.value} className={`quiz-option ${quizAnswers.area === opt.value ? "selected" : ""}`} onClick={() => handleQuizOption("area", opt.value, "single")} type="button">{opt.label}</button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                   <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
                     <button className="btn-secondary" onClick={() => setEditingProfileId(null)}>Cancel</button>
                     <button className="btn-primary" onClick={handleSaveProfile} disabled={!profileFormName.trim() || !profileFormBirthdate}>{editingProfileId === "__new__" ? "Add Kid" : "Save Changes"}</button>
@@ -1131,6 +1223,7 @@ export default function Home() {
                     <div className="dashboard-card-avatar">{p.avatar || "\uD83E\uDD95"}</div>
                     <div className="dashboard-card-name">{p.name}</div>
                     <div className="dashboard-card-age">Age {age}</div>
+                    {p.school && <div className="dashboard-card-school">{p.school}</div>}
                     {p.about && <div className="dashboard-card-about">{p.about.length > 80 ? p.about.slice(0, 80) + "\u2026" : p.about}</div>}
                     <div className="dashboard-card-stats">
                       {lovedCount > 0 && <span className="dashboard-stat">{"\u2764\uFE0F"} {lovedCount}</span>}
@@ -1149,13 +1242,20 @@ export default function Home() {
         )}
 
         {/* ── Kid View ── */}
-        {view === "kid" && activeProfile && (
-          <>
-            <section className="kid-hero">
+        {view === "kid" && activeProfile && (() => {
+          const [ar, ag, ab] = hexToRgb(activeProfile.accentColor || "#4A7C59");
+          return <>
+            <section className="kid-hero" style={{ background: `linear-gradient(135deg, rgba(${ar},${ag},${ab},0.12) 0%, #FBF7F0 50%, rgba(${ar},${ag},${ab},0.08) 100%)` }}>
               <div className="kid-hero-inner">
-                <div className="kid-hero-avatar">{activeProfile.avatar || "\uD83E\uDD95"}</div>
+                <div className="kid-hero-avatar" style={{ boxShadow: `0 4px 16px rgba(${ar},${ag},${ab},0.15)` }}>{activeProfile.avatar || "\uD83E\uDD95"}</div>
                 <h1 className="kid-hero-title">{activeProfile.name}&apos;s Programs</h1>
-                <p className="kid-hero-detail">Age {calculateAge(activeProfile.birthdate)}{activeProfile.about ? ` \u00B7 ${activeProfile.about}` : ""}</p>
+                <p className="kid-hero-detail">Age {calculateAge(activeProfile.birthdate)}{activeProfile.school ? ` \u00B7 ${activeProfile.school}` : ""}</p>
+                {activeProfile.about && <p className="kid-hero-about">{activeProfile.about}</p>}
+                {kidInterests.length > 0 && (
+                  <div className="kid-hero-interests">
+                    {kidInterests.map(cat => <span key={cat} className="kid-interest-chip">{CATEGORY_ICONS[cat]} {cat}</span>)}
+                  </div>
+                )}
                 <div className="kid-hero-actions">
                   <button className="btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => { setView("dashboard"); setActiveProfileId(null); }}>{"\u2190"} All Kids</button>
                   <button className="btn-secondary" style={{ padding: "8px 16px", fontSize: 13 }} onClick={() => { setShowProfileManager(true); startEditProfile(activeProfile); }}>Edit Profile</button>
@@ -1168,8 +1268,8 @@ export default function Home() {
               {renderCalendar()}
               {renderResultsAndGrid()}
             </main>
-          </>
-        )}
+          </>;
+        })()}
 
         <footer className="site-footer">
           <div className="footer-logo">925Kids</div>
