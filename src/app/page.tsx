@@ -425,6 +425,15 @@ const styles = `
   .calendar-expanded-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; color: var(--ink); }
   .calendar-expanded-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--ink-light); border-top: 1px solid var(--border); }
   .calendar-empty { text-align: center; padding: 24px; color: var(--ink-muted); font-size: 14px; font-style: italic; }
+  .about-section { max-width: 640px; margin: 0 auto 32px; }
+  .about-section h2 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+  .about-section p { color: var(--ink-light); font-size: 15px; line-height: 1.7; margin-bottom: 16px; }
+  .about-section ul { color: var(--ink-light); font-size: 15px; line-height: 1.7; margin-bottom: 16px; padding-left: 20px; }
+  .about-section li { margin-bottom: 8px; }
+  .about-hero { text-align: center; padding: 48px 24px 32px; }
+  .about-hero h1 { font-family: 'Fraunces', serif; font-size: clamp(28px, 4vw, 40px); font-weight: 700; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 12px; }
+  .about-hero p { color: var(--ink-light); font-size: 16px; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+  .footer-links { display: flex; gap: 16px; justify-content: center; margin-bottom: 16px; }
   @media (max-width: 640px) {
     .header-inner { flex-wrap: wrap; height: auto; padding: 10px 0; gap: 8px; }
     .dashboard-grid { grid-template-columns: 1fr; }
@@ -438,7 +447,7 @@ const styles = `
 /* ─── Component ──────────────────────────────────────────────────────── */
 
 export default function Home() {
-  const [view, setView] = useState<"search" | "dashboard" | "kid">("search");
+  const [view, setView] = useState<"search" | "dashboard" | "kid" | "about" | "privacy">("search");
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string | string[]>>({});
@@ -1274,6 +1283,96 @@ export default function Home() {
           </main>
         )}
 
+        {/* ── About View ── */}
+        {view === "about" && (
+          <main className="main-container">
+            <div className="about-hero">
+              <h1>Why 925Kids exists</h1>
+              <p>A free community resource built by a local parent, for local parents.</p>
+            </div>
+            <div className="about-section">
+              <h2>The problem</h2>
+              <p>If you&apos;ve ever tried to find after-school programs in the 925, you know the drill{"\u2014"}twelve browser tabs, a half-remembered Facebook thread, a flyer from the school office you already recycled, and still no clear picture of what&apos;s actually out there.</p>
+              <p>Every season it&apos;s the same scramble. What&apos;s age-appropriate? What fits our schedule? Is it any good? How much does it cost? The information exists, but it&apos;s scattered across dozens of websites, newsletters, and word-of-mouth recommendations.</p>
+            </div>
+            <div className="about-section">
+              <h2>What we did about it</h2>
+              <p>925Kids puts every after-school and summer program across the 925 area code in one place. Filter by age, interest, neighborhood, schedule, and budget{"\u2014"}no more open tabs.</p>
+              <p>You can create profiles for each of your kids, rate and compare programs, keep private notes, and see everything laid out on a monthly calendar. It&apos;s the tool we wished existed when we started looking.</p>
+            </div>
+            <div className="about-section">
+              <h2>What the 925 covers</h2>
+              <p>The 925 area code spans Contra Costa County and beyond{"\u2014"}communities where families are actively looking for great programs for their kids:</p>
+              <ul>
+                <li><strong>Lamorinda:</strong> Walnut Creek, Lafayette, Moraga, Orinda</li>
+                <li><strong>Tri-Valley:</strong> Danville, San Ramon, Alamo</li>
+                <li><strong>Central Contra Costa:</strong> Concord, Pleasant Hill, Martinez, Clayton</li>
+                <li><strong>East Contra Costa:</strong> Antioch, Pittsburg, Brentwood, Oakley, Bay Point, Discovery Bay</li>
+              </ul>
+            </div>
+            <div className="about-section">
+              <h2>Your data stays with you</h2>
+              <p>There are no accounts, no sign-ups, and no tracking. Everything{"\u2014"}your kid profiles, ratings, and notes{"\u2014"}is stored right in your browser. We never see it, and it never leaves your device.</p>
+            </div>
+            <div className="about-section">
+              <h2>No big business behind this</h2>
+              <p>925Kids is a free community project. No ads, no sponsorships, no premium tiers. Just a local parent who got frustrated enough to do something about it.</p>
+              <p>Know a program we&apos;re missing? We&apos;d love to hear about it.</p>
+              <div style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <button className="btn-primary" onClick={() => { setView("search"); window.scrollTo(0, 0); }}>Browse programs {"\u2192"}</button>
+                <button className="btn-secondary">+ Suggest a program</button>
+              </div>
+            </div>
+          </main>
+        )}
+
+        {/* ── Privacy View ── */}
+        {view === "privacy" && (
+          <main className="main-container">
+            <div className="about-hero">
+              <h1>Privacy Policy</h1>
+              <p>The short version: we don&apos;t collect your data.</p>
+            </div>
+            <div className="about-section">
+              <h2>No accounts, no sign-ups</h2>
+              <p>925Kids does not require you to create an account or provide any personal information to use the site. There is no registration, no email collection, and no login.</p>
+            </div>
+            <div className="about-section">
+              <h2>Your data stays in your browser</h2>
+              <p>All of your data{"\u2014"}kid profiles, program ratings, notes, and preferences{"\u2014"}is stored locally in your browser using localStorage. This data never leaves your device and is never transmitted to our servers or any third party.</p>
+              <p>This means your data is private by design. It also means that if you clear your browser data or switch devices, your information will not carry over.</p>
+            </div>
+            <div className="about-section">
+              <h2>No tracking or analytics</h2>
+              <p>We do not use cookies for tracking. We do not run analytics scripts. We do not serve ads. We do not build user profiles or track your behavior across sessions.</p>
+            </div>
+            <div className="about-section">
+              <h2>Address geocoding</h2>
+              <p>If you choose to enter a custom address for distance sorting, that address is sent to OpenStreetMap&apos;s Nominatim geocoding service to convert it to coordinates. This request is not logged or stored on our end. You can review <a href="https://nominatim.org/release-docs/latest/api/Search/" style={{ color: "var(--sage)" }}>Nominatim&apos;s usage policy</a> for their data handling practices.</p>
+            </div>
+            <div className="about-section">
+              <h2>Third-party services</h2>
+              <p>925Kids is hosted on Vercel. Vercel may collect standard web server logs (IP address, browser type, pages visited) as part of their infrastructure. You can review <a href="https://vercel.com/legal/privacy-policy" style={{ color: "var(--sage)" }}>Vercel&apos;s privacy policy</a> for details.</p>
+            </div>
+            <div className="about-section">
+              <h2>Deleting your data</h2>
+              <p>Since all data is stored in your browser, you have full control:</p>
+              <ul>
+                <li>Delete individual kid profiles using the &ldquo;Delete&rdquo; button in the profile manager</li>
+                <li>Clear all 925Kids data by clearing your browser&apos;s site data for this domain</li>
+                <li>Use your browser&apos;s private/incognito mode for a session that leaves no trace</li>
+              </ul>
+            </div>
+            <div className="about-section">
+              <h2>Questions?</h2>
+              <p>If you have questions about how 925Kids handles your information, reach out{"\u2014"}we&apos;re happy to explain anything in more detail.</p>
+              <div style={{ marginTop: 20 }}>
+                <button className="btn-secondary" onClick={() => { setView("search"); window.scrollTo(0, 0); }}>{"\u2190"} Back to browsing</button>
+              </div>
+            </div>
+          </main>
+        )}
+
         {/* ── Kid View ── */}
         {view === "kid" && activeProfile && (() => {
           const [ar, ag, ab] = hexToRgb(activeProfile.accentColor || "#4A7C59");
@@ -1307,6 +1406,10 @@ export default function Home() {
           <div className="footer-logo">925Kids</div>
           <p className="footer-tagline">Activities across the 925</p>
           <p className="footer-story">&ldquo;If you&apos;ve ever tried to find after-school programs in the 925, you know the drill{"\u2014"}twelve browser tabs, a Facebook thread you can&apos;t find again, and still no clear picture. I got frustrated enough to do something about it. No big business behind this. Just a local parent.&rdquo;</p>
+          <div className="footer-links">
+            <button className="suggest-link" style={{ fontSize: 12, padding: "6px 14px" }} onClick={() => { setView("about"); window.scrollTo(0, 0); }}>About Us</button>
+            <button className="suggest-link" style={{ fontSize: 12, padding: "6px 14px" }} onClick={() => { setView("privacy"); window.scrollTo(0, 0); }}>Privacy</button>
+          </div>
           <button className="suggest-link">+ Suggest a program</button>
         </footer>
       </div>
