@@ -174,7 +174,7 @@ export default function Home() {
 
         <section className="hero">
           <div className="hero-img-wrap">
-            <img src="https://images.unsplash.com/photo-1472162072942-cd5147eb3902?w=1400&q=80" alt="Kids playing outdoors in a park" />
+            <img src="https://images.unsplash.com/photo-1617210406603-c16ac72ff2f6?w=1400&q=80" alt="Mount Diablo at sunset, Contra Costa County" />
             <div className="hero-img-overlay" />
           </div>
           <div className="hero-content">
