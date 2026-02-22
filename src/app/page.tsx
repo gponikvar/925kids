@@ -490,7 +490,7 @@ export default function Home() {
   // UI-only state
   const [filterRating, setFilterRating] = useState<"all" | Rating>("all");
   const [showNoped, setShowNoped] = useState(false);
-  const [sortByDistance, setSortByDistance] = useState(false);
+  const [sortBy, setSortBy] = useState<"default" | "price-low" | "price-high" | "distance" | "name">("default");
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set());
   const [addressInput, setAddressInput] = useState("");
   const [geocoding, setGeocoding] = useState(false);
@@ -601,9 +601,9 @@ export default function Home() {
 
   const clearLocation = useCallback(() => {
     setUserLocation(null);
-    setSortByDistance(false);
+    if (sortBy === "distance") setSortBy("default");
     localStorage.removeItem("925kids-location");
-  }, []);
+  }, [sortBy]);
 
   const resetFilters = () => { setFilterCategory("All"); setFilterCity("All Areas"); setFilterAge("all"); setFilterCost("all"); setFilterSessions([]); setFilterRating("all"); };
   const toggleSession = (val: string) => setFilterSessions(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
@@ -707,14 +707,20 @@ export default function Home() {
       if (filterRating !== "all" && ratings[key] !== filterRating) return false;
       return true;
     });
-    if (sortByDistance && userLocation) {
+    if (sortBy === "distance" && userLocation) {
       results = [...results].sort((a, b) =>
         haversineDistance(userLocation.lat, userLocation.lng, a.lat, a.lng) -
         haversineDistance(userLocation.lat, userLocation.lng, b.lat, b.lng)
       );
+    } else if (sortBy === "price-low") {
+      results = [...results].sort((a, b) => computeCostPerHour(a) - computeCostPerHour(b));
+    } else if (sortBy === "price-high") {
+      results = [...results].sort((a, b) => computeCostPerHour(b) - computeCostPerHour(a));
+    } else if (sortBy === "name") {
+      results = [...results].sort((a, b) => a.name.localeCompare(b.name));
     }
     return results;
-  }, [filterCategory, filterCity, filterAge, filterCost, filterSessions, filterRating, ratings, ratingPrefix, showNoped, sortByDistance, userLocation]);
+  }, [filterCategory, filterCity, filterAge, filterCost, filterSessions, filterRating, ratings, ratingPrefix, showNoped, sortBy, userLocation]);
 
   const currentQuizStep = QUIZ_STEPS[quizStep];
 
@@ -852,11 +858,13 @@ export default function Home() {
       <div className="results-header">
         <p className="results-count"><span>{filtered.length}</span> program{filtered.length !== 1 ? "s" : ""} found{activeProfile ? ` for ${activeProfile.avatar || "\uD83E\uDD95"} ${activeProfile.name}` : ""}</p>
         <div className="results-actions">
-          {userLocation && (
-            <button className={`sort-btn ${sortByDistance ? "active" : ""}`} onClick={() => setSortByDistance(prev => !prev)}>
-              {sortByDistance ? "\u2713 " : ""}Sort by distance
-            </button>
-          )}
+          <select className="filter-select" style={{ minWidth: 150 }} value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}>
+            <option value="default">Sort: Default</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            {userLocation && <option value="distance">Distance: Nearest</option>}
+            <option value="name">Name: A to Z</option>
+          </select>
           {ratedCount > 0 && (
             <>
               {(["love", "like", "maybe"] as const).map(r => {
@@ -1241,8 +1249,8 @@ export default function Home() {
               </div>
             </section>
             <main className="main-container">
-              {renderFiltersBar()}
               {renderAddressBar()}
+              {renderFiltersBar()}
               {renderResultsAndGrid()}
             </main>
           </>
