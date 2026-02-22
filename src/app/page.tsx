@@ -139,6 +139,20 @@ const PRESET_LOCATIONS: PresetLocation[] = [
   { label: "Ambrose Community Center", city: "Bay Point", lat: 38.0290, lng: -121.9610 },
   // Discovery Bay
   { label: "Discovery Bay Town Center", city: "Discovery Bay", lat: 37.9085, lng: -121.6020 },
+  // Private & Charter Schools
+  { label: "Seven Hills School", city: "Walnut Creek", lat: 37.9050, lng: -122.0555 },
+  { label: "Berean Christian High School", city: "Walnut Creek", lat: 37.9100, lng: -122.0620 },
+  { label: "Valle Verde Elementary", city: "Walnut Creek", lat: 37.9130, lng: -122.0420 },
+  { label: "The Athenian School", city: "Danville", lat: 37.8360, lng: -122.0180 },
+  { label: "Saklan Valley School", city: "Moraga", lat: 37.8340, lng: -122.1260 },
+  { label: "Orinda Academy", city: "Orinda", lat: 37.8780, lng: -122.1800 },
+  { label: "Holden High School", city: "Orinda", lat: 37.8771, lng: -122.1790 },
+  { label: "Bentley School", city: "Lafayette", lat: 37.8835, lng: -122.1203 },
+  { label: "St. Perpetua School", city: "Lafayette", lat: 37.8935, lng: -122.1180 },
+  { label: "Meher Schools", city: "Lafayette", lat: 37.8900, lng: -122.1240 },
+  { label: "De La Salle High School", city: "Concord", lat: 37.9550, lng: -122.0300 },
+  { label: "Carondelet High School", city: "Concord", lat: 37.9540, lng: -122.0310 },
+  { label: "Clayton Valley Charter High School", city: "Clayton", lat: 37.9410, lng: -121.9370 },
 ];
 
 const SCHOOLS = PRESET_LOCATIONS.filter(p => /Elementary|Middle|Intermediate|High School/.test(p.label)).map(p => ({ label: p.label, city: p.city }));
@@ -595,6 +609,13 @@ export default function Home() {
       const age = calculateAge(profile.birthdate);
       setFilterAge(ageToFilterValue(age));
       setFilterCategory("All");
+      // Auto-set location from school/neighborhood
+      if (profile.school && profile.school !== "No school yet") {
+        const preset = PRESET_LOCATIONS.find(p => p.label === profile.school);
+        if (preset) {
+          setUserLocation({ lat: preset.lat, lng: preset.lng, label: preset.label });
+        }
+      }
     }
   }, [profiles]);
 
@@ -618,7 +639,7 @@ export default function Home() {
     setProfileFormAbout(profile.about || "");
     setProfileFormColor(profile.accentColor || "#4A7C59");
     setProfileFormSchool(profile.school || "");
-    setProfileFormSchoolCustom(profile.school ? !SCHOOLS.some(s => s.label === profile.school) : false);
+    setProfileFormSchoolCustom(profile.school ? !PRESET_LOCATIONS.some(p => p.label === profile.school) && profile.school !== "No school yet" : false);
   }, []);
 
   const handleSaveProfile = useCallback(() => {
@@ -774,6 +795,17 @@ export default function Home() {
       <div className="filter-group"><label className="filter-label">Area</label><select className="filter-select" value={filterCity} onChange={e => setFilterCity(e.target.value)}><option>All Areas</option>{CITY_GROUPS.map(g => <optgroup key={g.label} label={g.label}>{g.cities.map(c => <option key={c}>{c}</option>)}</optgroup>)}</select></div>
       <div className="filter-group"><label className="filter-label">Kid&apos;s Age</label><select className="filter-select" value={filterAge} onChange={e => setFilterAge(e.target.value)}>{AGE_RANGES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}</select></div>
       <div className="filter-group"><label className="filter-label">Budget</label><select className="filter-select" value={filterCost} onChange={e => setFilterCost(e.target.value)}>{COST_TIERS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+      <div className="filter-group" style={{ minWidth: 200 }}>
+        <label className="filter-label">When</label>
+        <div className="session-toggles">{SESSION_TYPES.map(s => <button key={s.value} className={`session-toggle ${filterSessions.includes(s.value) ? "active" : ""}`} onClick={() => toggleSession(s.value)}>{s.label}</button>)}</div>
+      </div>
+      <button className="filter-reset" onClick={resetFilters}>Reset</button>
+    </div>
+  );
+
+  const renderKidFiltersBar = () => (
+    <div className="filters-bar">
+      <div className="filter-group"><label className="filter-label">Kid&apos;s Age</label><select className="filter-select" value={filterAge} onChange={e => setFilterAge(e.target.value)}>{AGE_RANGES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}</select></div>
       <div className="filter-group" style={{ minWidth: 200 }}>
         <label className="filter-label">When</label>
         <div className="session-toggles">{SESSION_TYPES.map(s => <button key={s.value} className={`session-toggle ${filterSessions.includes(s.value) ? "active" : ""}`} onClick={() => toggleSession(s.value)}>{s.label}</button>)}</div>
@@ -1112,19 +1144,20 @@ export default function Home() {
                     <input type="date" className="address-input" value={profileFormBirthdate} onChange={e => setProfileFormBirthdate(e.target.value)} max={new Date().toISOString().split("T")[0]} />
                   </div>
                   <div className="filter-group" style={{ marginBottom: 16 }}>
-                    <label className="filter-label">School</label>
+                    <label className="filter-label">School or Neighborhood</label>
                     {profileFormSchoolCustom ? (
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input className="address-input" placeholder="School name..." value={profileFormSchool} onChange={e => setProfileFormSchool(e.target.value)} />
+                        <input className="address-input" placeholder="School or location name..." value={profileFormSchool} onChange={e => setProfileFormSchool(e.target.value)} />
                         <button className="address-clear" onClick={() => { setProfileFormSchoolCustom(false); setProfileFormSchool(""); }}>Back</button>
                       </div>
                     ) : (
                       <select className="filter-select" value={profileFormSchool} onChange={e => { if (e.target.value === "__other__") { setProfileFormSchoolCustom(true); setProfileFormSchool(""); } else { setProfileFormSchool(e.target.value); } }}>
-                        <option value="">Select a school...</option>
+                        <option value="">Select a school or neighborhood...</option>
+                        <option value="No school yet">No school yet (younger kids)</option>
                         {CITY_GROUPS.map(g => {
-                          const groupSchools = SCHOOLS.filter(s => g.cities.includes(s.city));
-                          if (groupSchools.length === 0) return null;
-                          return <optgroup key={g.label} label={g.label}>{groupSchools.map(s => <option key={s.label} value={s.label}>{s.label}</option>)}</optgroup>;
+                          const groupLocations = PRESET_LOCATIONS.filter(p => g.cities.includes(p.city));
+                          if (groupLocations.length === 0) return null;
+                          return <optgroup key={g.label} label={g.label}>{groupLocations.map(p => <option key={p.label} value={p.label}>{p.label}</option>)}</optgroup>;
                         })}
                         <option value="__other__">Other</option>
                       </select>
@@ -1263,8 +1296,7 @@ export default function Home() {
               </div>
             </section>
             <main className="main-container">
-              {renderFiltersBar()}
-              {renderAddressBar()}
+              {renderKidFiltersBar()}
               {renderCalendar()}
               {renderResultsAndGrid()}
             </main>
