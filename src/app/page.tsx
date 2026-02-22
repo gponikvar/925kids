@@ -1311,6 +1311,11 @@ export default function Home() {
               </ul>
             </div>
             <div className="about-section">
+              <h2>Built for how parents actually search</h2>
+              <p>We know you&apos;re not sitting down for a dedicated research session. You&apos;re squeezing in 30 seconds while waiting at pickup. Ten minutes before bed. A quick scroll during lunch.</p>
+              <p>That&apos;s why everything you do here{"\u2014"}every rating, every note, every &ldquo;maybe&rdquo;{"\u2014"}is saved automatically. No account needed. Just close the tab and come back whenever. You pick up exactly where you left off.</p>
+            </div>
+            <div className="about-section">
               <h2>Your data stays with you</h2>
               <p>There are no accounts, no sign-ups, and no tracking. Everything{"\u2014"}your kid profiles, ratings, and notes{"\u2014"}is stored right in your browser. We never see it, and it never leaves your device.</p>
             </div>
